@@ -1,6 +1,6 @@
 # main.py - Simple cron service for sports events
 from flask import Flask, request, jsonify
-from openai import OpenAI
+import openai
 import psycopg2
 import json
 import os
@@ -66,15 +66,13 @@ Important: Only include real, confirmed events. If no events found, return empty
 def scrape_region_events(region):
     """Get events for a specific region using OpenAI"""
     try:
-        # Create client with explicit parameters to avoid proxy issues
-        client = OpenAI(
-            api_key=os.environ['OPENAI_API_KEY'],
-            timeout=30.0,
-            max_retries=2
-        )
+        # Use the legacy format to avoid proxy issues
+        import openai
+        openai.api_key = os.environ['OPENAI_API_KEY']
+        
         prompt = create_search_prompt(region)
         
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a sports event researcher. Provide accurate, real sports event information in the requested JSON format."},
