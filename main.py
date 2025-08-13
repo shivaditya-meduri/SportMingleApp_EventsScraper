@@ -66,7 +66,12 @@ Important: Only include real, confirmed events. If no events found, return empty
 def scrape_region_events(region):
     """Get events for a specific region using OpenAI"""
     try:
-        client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+        # Create client with explicit parameters to avoid proxy issues
+        client = OpenAI(
+            api_key=os.environ['OPENAI_API_KEY'],
+            timeout=30.0,
+            max_retries=2
+        )
         prompt = create_search_prompt(region)
         
         response = client.chat.completions.create(
