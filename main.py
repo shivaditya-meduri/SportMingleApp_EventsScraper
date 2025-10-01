@@ -4,7 +4,7 @@ import openai
 import psycopg2
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import logging
 
 # Set up logging
@@ -29,39 +29,38 @@ def get_db_connection():
         password=os.environ['DB_PASSWORD']
     )
 
-def create_search_prompt(region):
-    """Create search prompt for LLM"""
-    today = datetime.now()
+def create_search_prompt(region: str) -> str:
+    """Create search prompt for LLM to fetch participatory sports events"""
+    today = datetime.now(UTC)
     next_month = today + timedelta(days=30)
-    
-    return f"""Find current sports events happening in {region} from {today.strftime('%Y-%m-%d')} to {next_month.strftime('%Y-%m-%d')}.
 
-Please search for and provide information about upcoming sports events including:
-- Professional sports games 
-- Local tournaments
-- Major sporting events
-- Tennis tournaments
-- Soccer matches
-- Basketball games
+    return f"""
+Find participatory sports events happening in {region} between {today.strftime('%Y-%m-%d')} and {next_month.strftime('%Y-%m-%d')}.
 
-For each event you find, provide the information in this EXACT JSON format:
+Important:
+- Only include events where people can actively participate (not just watch).
+- Examples: running events (marathons, 5Ks), cycling races, triathlons, swimming competitions, combat sports (boxing, wrestling, judo, BJJ), team sports (soccer, basketball, cricket, volleyball, rugby), fitness competitions (CrossFit, obstacle races, strongman), racket sports (tennis, badminton, table tennis), and any open amateur or community tournaments.
+- Exclude professional spectator-only events like NBA, NFL, or major league games unless ordinary participants can register or join.
+
+Return ONLY valid JSON in this exact format:
 
 {{
   "events": [
     {{
       "event_name": "Event name here",
-      "sport_type": "Tennis/Soccer/Basketball/etc",
+      "sport_type": "Running/Boxing/Soccer/etc",
       "description": "Brief description of the event",
       "event_location": "Venue name",
       "event_address": "Full address if available, or venue + city",
       "event_startdatetime": "YYYY-MM-DD HH:MM:SS",
       "event_enddatetime": "YYYY-MM-DD HH:MM:SS or null if unknown",
-      "link": "Official website or ticket link if available"
+      "link": "Official registration or event website"
     }}
   ]
 }}
 
-Important: Only include real, confirmed events. If no events found, return empty events array."""
+If no participatory events are found, return: {{"events": []}}
+"""
 
 def scrape_region_events(region):
     """Get events for a specific region using OpenAI"""
